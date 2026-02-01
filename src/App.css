@@ -37,6 +37,7 @@
   background: #1f2937;
 }
 
+
 .status {
   display: flex;
   justify-content: space-between;
@@ -148,3 +149,4 @@
 .flags__item:first-of-type {
   border-top: none;
 }
+

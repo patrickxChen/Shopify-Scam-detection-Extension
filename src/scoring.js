@@ -69,6 +69,18 @@ export const scoreProduct = (data) => {
     flags.push('Low product image count');
   }
 
+  if (typeof data.imageLowResCount === 'number' && data.imageLowResCount >= 2) {
+    score += 15;
+    flags.push('Multiple low-resolution images');
+  }
+
+  if (typeof data.imageAveragePixels === 'number' && data.imageAveragePixels > 0) {
+    if (data.imageAveragePixels < 250000) {
+      score += 10;
+      flags.push('Low average image resolution');
+    }
+  }
+
   if (typeof data.reviewCount === 'number' && data.reviewCount === 0) {
     score += 10;
     flags.push('No visible reviews');
@@ -80,5 +92,61 @@ export const scoreProduct = (data) => {
   if (score >= 55) risk = 'High';
   else if (score >= 25) risk = 'Medium';
 
-  return { score, risk, flags };
+  return { score, risk, flags, source: 'heuristic' };
+};
+
+const REMOTE_SCORING_URL = 'http://localhost:8000/score';
+
+const withTimeout = (promise, ms) =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+
+export const scoreProductWithRemote = async (data) => {
+  try {
+    const response = await withTimeout(
+      fetch(REMOTE_SCORING_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: data.url,
+          title: data.title,
+          description: data.description,
+          priceText: data.priceText,
+          imageCount: data.imageCount,
+          imageLowResCount: data.imageLowResCount,
+          imageAveragePixels: data.imageAveragePixels,
+          reviewCount: data.reviewCount
+        })
+      }),
+      2500
+    );
+
+    if (!response.ok) {
+      throw new Error('remote-score-failed');
+    }
+
+    const payload = await response.json();
+    if (!payload || typeof payload.score !== 'number' || !payload.risk) {
+      throw new Error('remote-score-invalid');
+    }
+
+    return {
+      score: Math.max(0, Math.min(100, payload.score)),
+      risk: payload.risk,
+      flags: Array.isArray(payload.flags) ? payload.flags : [],
+      source: 'ml'
+    };
+  } catch (error) {
+    return scoreProduct(data);
+  }
 };

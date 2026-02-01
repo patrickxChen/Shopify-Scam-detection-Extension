@@ -35,7 +35,7 @@
     return '';
   };
 
-  const getImagesCount = () => {
+  const getImageSignals = () => {
     const imageSelectors = [
       '[class*="product"] img',
       '[data-product-media] img',
@@ -45,6 +45,9 @@
 
     const seen = new Set();
     let count = 0;
+    let lowResCount = 0;
+    let totalPixels = 0;
+    let sizeSamples = 0;
 
     for (const selector of imageSelectors) {
       const nodes = document.querySelectorAll(selector);
@@ -53,13 +56,30 @@
         if (src && !seen.has(src)) {
           seen.add(src);
           count += 1;
+
+          const width = img.naturalWidth || Number(img.getAttribute('width')) || 0;
+          const height = img.naturalHeight || Number(img.getAttribute('height')) || 0;
+          if (width > 0 && height > 0) {
+            const pixels = width * height;
+            totalPixels += pixels;
+            sizeSamples += 1;
+            if (width < 400 || height < 400 || pixels < 200000) {
+              lowResCount += 1;
+            }
+          }
         }
       });
 
       if (count >= 6) break;
     }
 
-    return count;
+    const averagePixels = sizeSamples > 0 ? Math.round(totalPixels / sizeSamples) : 0;
+
+    return {
+      imageCount: count,
+      imageLowResCount: lowResCount,
+      imageAveragePixels: averagePixels
+    };
   };
 
   const getReviewCount = () => {
@@ -94,13 +114,17 @@
       'meta[name="description"]'
     ]);
 
+    const imageSignals = getImageSignals();
+
     return {
       isProductPage: true,
       url: window.location.href,
       title,
       description,
       priceText: getPriceText(),
-      imageCount: getImagesCount(),
+      imageCount: imageSignals.imageCount,
+      imageLowResCount: imageSignals.imageLowResCount,
+      imageAveragePixels: imageSignals.imageAveragePixels,
       reviewCount: getReviewCount()
     };
   };

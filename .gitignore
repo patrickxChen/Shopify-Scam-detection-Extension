@@ -11,6 +11,12 @@
 # production
 /build
 
+# python env / ml artifacts
+/.venv
+__pycache__/
+ml/model.joblib
+ml/data_with_images.csv
+
 # misc
 .DS_Store
 .env.local

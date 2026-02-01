@@ -1,6 +1,7 @@
+/* global chrome */
 import { useCallback, useEffect, useState } from 'react';
 import './App.css';
-import { scoreProduct } from './scoring';
+import { scoreProductWithRemote } from './scoring';
 
 const formatPrice = (priceText) => {
   if (!priceText) return 'Not found';
@@ -12,43 +13,49 @@ function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
-  const scanPage = useCallback(() => {
+  const scanPage = useCallback(async () => {
     setStatus('Scanning…');
     setError('');
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const tab = tabs && tabs[0];
-      if (!tab || !tab.id) {
-        setStatus('Idle');
-        setError('No active tab found.');
-        return;
-      }
-
-      chrome.tabs.sendMessage(tab.id, { type: 'SCAN_PRODUCT' }, (response) => {
-        if (chrome.runtime.lastError) {
-          setStatus('Idle');
-          setError('This page is not a Shopify product page.');
-          return;
-        }
-
-        if (!response || !response.ok) {
-          setStatus('Idle');
-          setError('Unable to read product data.');
-          return;
-        }
-
-        if (!response.data.isProductPage) {
-          setStatus('Idle');
-          setError('Open a Shopify product page to scan.');
-          return;
-        }
-
-        const scored = scoreProduct(response.data);
-        setResult({ ...response.data, ...scored });
-        setStatus('Done');
+    const tab = await new Promise((resolve) => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        resolve(tabs && tabs[0]);
       });
     });
+
+    if (!tab || !tab.id) {
+      setStatus('Idle');
+      setError('No active tab found.');
+      return;
+    }
+
+    const response = await new Promise((resolve) => {
+      chrome.tabs.sendMessage(tab.id, { type: 'SCAN_PRODUCT' }, (payload) => {
+        if (chrome.runtime.lastError) {
+          resolve({ ok: false, error: 'not-product-page' });
+          return;
+        }
+        resolve(payload);
+      });
+    });
+
+    if (!response || !response.ok) {
+      setStatus('Idle');
+      setError('This page is not a Shopify product page.');
+      return;
+    }
+
+    if (!response.data.isProductPage) {
+      setStatus('Idle');
+      setError('Open a Shopify product page to scan.');
+      return;
+    }
+
+    const scored = await scoreProductWithRemote(response.data);
+    setResult({ ...response.data, ...scored });
+    setStatus('Done');
   }, []);
+
 
   useEffect(() => {
     scanPage();
@@ -93,6 +100,10 @@ function App() {
           <div className="result__row">
             <span>Images</span>
             <strong>{result.imageCount}</strong>
+          </div>
+          <div className="result__row">
+            <span>Low-res images</span>
+            <strong>{result.imageLowResCount ?? 0}</strong>
           </div>
           <div className="result__row">
             <span>Reviews</span>
