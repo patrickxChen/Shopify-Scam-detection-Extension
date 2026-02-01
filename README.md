@@ -11,3 +11,7 @@ Guardify is a Chrome extension that helps identify potentially fake or low-quali
 ## Status
 
 This is an early prototype focused on building the scan flow and UI. The detection logic will evolve as more signals are added.
+
+## Addtional Notes
+
+This was inpsired by UofTHacks 13's theme of "Identity". Nowadays, cultural clothing and other items used to express identity are at risk of being used as scams. Someone can easily AI generate a fake listing which negatively harms both the seller and the buyer. Guardify attempts to mitigate this impact.
