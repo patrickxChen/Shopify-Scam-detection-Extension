@@ -1,35 +1,27 @@
 {
-  "short_name": "Guardify",
+  "manifest_version": 3,
   "name": "Guardify",
-  "icons": [
+  "short_name": "Guardify",
+  "version": "0.1.0",
+  "description": "Flags risk signals on Shopify product pages.",
+  "action": {
+    "default_title": "Scan this product",
+    "default_popup": "index.html"
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png",
+    "192": "icons/icon-192.png",
+    "512": "icons/icon-512.png"
+  },
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["https://*/products/*", "https://*/*/products/*"],
+  "content_scripts": [
     {
-      "src": "icons/icon-16.png",
-      "type": "image/png",
-      "sizes": "16x16"
-    },
-    {
-      "src": "icons/icon-48.png",
-      "type": "image/png",
-      "sizes": "48x48"
-    },
-    {
-      "src": "icons/icon-128.png",
-      "type": "image/png",
-      "sizes": "128x128"
-    },
-    {
-      "src": "icons/icon-192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "matches": ["https://*/products/*", "https://*/*/products/*"],
+      "js": ["contentScript.js"],
+      "run_at": "document_idle"
     }
-  ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  ]
 }
