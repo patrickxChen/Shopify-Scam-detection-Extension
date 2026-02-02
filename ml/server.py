@@ -41,6 +41,36 @@ def repetition_score(text: str) -> float:
     return 1.0 - (unique / len(tokens))
 
 
+def uppercase_ratio(text: str) -> float:
+    if not text:
+        return 0.0
+    letters = [c for c in text if c.isalpha()]
+    if not letters:
+        return 0.0
+    upper = sum(1 for c in letters if c.isupper())
+    return upper / len(letters)
+
+
+SCAM_KEYWORDS = [
+    "limited stock",
+    "best offer",
+    "free trial",
+    "exclusive",
+    "guaranteed",
+    "order now",
+    "act now",
+    "no other product",
+    "100%",
+]
+
+
+def scam_keyword_count(text: str) -> int:
+    if not text:
+        return 0
+    lower = text.lower()
+    return sum(1 for kw in SCAM_KEYWORDS if kw in lower)
+
+
 @app.on_event("startup")
 async def load_model():
     if not MODEL_PATH.exists():
@@ -56,17 +86,27 @@ def score(req: ScoreRequest):
         return {"score": 0, "risk": "Low", "flags": ["Model not loaded"]}
 
     price = parse_price(req.priceText)
-    desc_length = len(req.description or "")
-    rep = repetition_score(req.description or "")
+    description = req.description or ""
+    title = req.title or ""
+    desc_length = len(description)
+    rep = repetition_score(description)
+    title_length = len(title)
+    exclamation_count = description.count("!")
+    upper_ratio = uppercase_ratio(description)
+    keyword_count = scam_keyword_count(description)
 
     features = {
-        "title": req.title or "",
-        "description": req.description or "",
+        "title": title,
+        "description": description,
         "price": price,
         "image_count": req.imageCount,
         "review_count": req.reviewCount,
         "desc_length": desc_length,
+        "title_length": title_length,
         "repetition_score": rep,
+        "exclamation_count": exclamation_count,
+        "upper_ratio": upper_ratio,
+        "scam_keyword_count": keyword_count,
     }
 
     if req.imageAveragePixels is not None:

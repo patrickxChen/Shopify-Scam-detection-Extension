@@ -39,7 +39,11 @@ def build_pipeline(numeric_features):
 def add_derived_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["desc_length"] = df["description"].fillna("").str.len()
+    df["title_length"] = df["title"].fillna("").str.len()
     df["repetition_score"] = df["description"].fillna("").apply(repetition_score)
+    df["exclamation_count"] = df["description"].fillna("").str.count("!")
+    df["upper_ratio"] = df["description"].fillna("").apply(uppercase_ratio)
+    df["scam_keyword_count"] = df["description"].fillna("").apply(scam_keyword_count)
     return df
 
 
@@ -51,6 +55,36 @@ def repetition_score(text: str) -> float:
         return 0.0
     unique = len(set(tokens))
     return 1.0 - (unique / len(tokens))
+
+
+def uppercase_ratio(text: str) -> float:
+    if not text:
+        return 0.0
+    letters = [c for c in text if c.isalpha()]
+    if not letters:
+        return 0.0
+    upper = sum(1 for c in letters if c.isupper())
+    return upper / len(letters)
+
+
+SCAM_KEYWORDS = [
+    "limited stock",
+    "best offer",
+    "free trial",
+    "exclusive",
+    "guaranteed",
+    "order now",
+    "act now",
+    "no other product",
+    "100%",
+]
+
+
+def scam_keyword_count(text: str) -> int:
+    if not text:
+        return 0
+    lower = text.lower()
+    return sum(1 for kw in SCAM_KEYWORDS if kw in lower)
 
 
 def main():
@@ -70,8 +104,23 @@ def main():
         raise SystemExit(f"Missing columns: {missing}")
 
     df = add_derived_features(df)
+    df["title"] = df["title"].fillna("")
+    df["description"] = df["description"].fillna("")
+    df["price"] = pd.to_numeric(df["price"], errors="coerce").fillna(0)
+    df["image_count"] = pd.to_numeric(df["image_count"], errors="coerce").fillna(0)
+    df["review_count"] = pd.to_numeric(df["review_count"], errors="coerce").fillna(0)
 
-    base_numeric = ["price", "image_count", "review_count", "desc_length", "repetition_score"]
+    base_numeric = [
+        "price",
+        "image_count",
+        "review_count",
+        "desc_length",
+        "title_length",
+        "repetition_score",
+        "exclamation_count",
+        "upper_ratio",
+        "scam_keyword_count",
+    ]
     optional_numeric = [
         "image_avg_pixels",
         "image_low_res_count",

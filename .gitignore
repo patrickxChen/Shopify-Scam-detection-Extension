@@ -10,6 +10,7 @@
 
 # production
 /build
+guardify-build.zip
 
 # python env / ml artifacts
 /.venv
