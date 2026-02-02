@@ -1,4 +1,5 @@
-# Guardify
+# Guardify ![Guardify Screenshot](https://i.imgur.com/AbCdE12.png)
+
 
 Guardify is a Chrome extension that helps identify potentially fake or low-quality Shopify product listings. It scans a product page for common risk signals (like thin descriptions, repetitive copy, low image count, or suspicious pricing) and summarizes the results in a simple popup for quick review.
 
